@@ -83,6 +83,18 @@ included, force pushes and deletion off. CodeRabbit: the GitHub App covers the a
 reviewed PR #1 (a summary, no threads). Pull requests are merged by the user, with a merge
 commit (CONTRIBUTING.md).
 
+### RECLINED R0 (branch `reclined-r0` off `first-build`, paused 2026-10-30 by the user, no PR yet)
+The static half is done (FINDINGS.md "Game variables"): the new-game block at `0x820FFE80`
+(64-bit score, two 10,000 thresholds, lives +24, bombs +28), the mode word `0x820FFEBC`, the
+string-table switch, the profile/input wrappers; `tools/find_refs.py` is the scanner. Not
+written yet: `port/src/memscan.cpp/.h` (`--geomwars_memscan=<dir>`, `--geomwars_memscan_every`,
+a snapshot of the committed guest pages from `GeomWarsFrameMark` via `VirtualQuery` over
+`kernel_state()->memory()->virtual_membase()`, 64 KB zero chunks skipped, `chunks.idx` +
+`data.bin` per snapshot), `tools/memscan.py` (find values across snapshots, trends for the
+ship's x,y under a held stick), `tools/autopilot/memscan.txt` (slow stick legs of 9 s each
+direction, a bomb at 48 s, then still). **Resume with the user's go**: write those, ask once
+for the build-and-run, then confirm the addresses from the captures' HUD values.
+
 ## Next steps (in order; each build or run needs the user's OK first)
 1. **M2, the rest:** (done) the Evolved capture pass, run 3. Next: Retro (the second entry on
    "Select game mode": a DOWN before the START), and a capture-by-capture comparison against
