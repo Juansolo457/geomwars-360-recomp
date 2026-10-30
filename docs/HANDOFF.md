@@ -87,8 +87,10 @@ commit (CONTRIBUTING.md).
 1. **M2, the rest:** (done) the Evolved capture pass, run 3. Next: Retro (the second entry on
    "Select game mode": a DOWN before the START), and a capture-by-capture comparison against
    console footage (grid warp, bloom, particles, the HUD font) with the 1.2 s-leg `menu.txt`.
-2. **High score persistence:** a run that scores, then a second run with the same user directory
-   (`-FreshProfile` off): does "Highscore" keep the value (`XamUserWriteProfileSettings`)?
+2. **High score persistence:** a run that **beats the 10,000 seed** (run 3 reached 800 in 90 s
+   with the script; the user's own game, or a longer script, is needed), then a second run with
+   the same user directory (`-FreshProfile` off): does "Highscore" show the new value, and did
+   the first run log `XamUserWriteProfileSettings`?
 3. **Audio:** `--geomwars_audio_dump` + `tools/audio_report.py` for levels, clipping and
    submit-rate gaps; the user listens.
 4. **Live screens fail closed:** Achievements does (run 3). Leaderboards from the pause menu
