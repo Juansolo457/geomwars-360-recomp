@@ -33,6 +33,13 @@ codegen and build wait for the user's OK** (every build and run in this repo doe
 - The SDK install stamp `geomwars-sdk-tree` written beside the sisters' in the shared install
   (tree `12884d9`), so `setup.ps1` sees it as done on this PC.
 
+Repository: https://github.com/Juansolo457/geomwars-360-recomp, **public**, created 2026-10-30
+(wiki and projects off, branches deleted on merge, topics xbox-360, recompilation, vulkan,
+steam-deck, rexglue, xbla), the bootstrap commit on `master`. Branch protection read back from
+the API after the push: `audit` required and strict, conversation resolution on, admins
+included, force pushes and deletion off. CodeRabbit: the GitHub App covers the account; this
+pull request is the first it sees here.
+
 ## Next steps (in order; each build or run needs the user's OK first)
 1. **First codegen and build:** `tools/build.ps1` (codegen of a 1.1 MB image: seconds; the
    compile a few minutes). Then on `private/xex/default.bin`: `check_switch_tables.py`,
