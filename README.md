@@ -25,7 +25,9 @@ Steam Deck, both on Vulkan.
 
 ## Status
 
-Started 2026-10-30. See [docs/HANDOFF.md](docs/HANDOFF.md) for where it stands.
+Started 2026-10-30; the same day it booted to Evolved at a steady 60 fps on Windows (the title,
+the menus, the grid, enemies, bloom, game over). See [docs/HANDOFF.md](docs/HANDOFF.md) for
+where it stands.
 
 - [docs/PLAN.md](docs/PLAN.md): goals, decisions, milestones, lessons from the sister projects
 - [docs/HANDOFF.md](docs/HANDOFF.md): current state, how things work, where things live

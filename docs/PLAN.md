@@ -87,6 +87,8 @@ libpng/libjpeg-era loaders, XACT audio, the game's data in two `.dat` tables.
 | M5 | **Performance and release** | Measured bottlenecks if any (a 2005 Arcade game should be GPU-light); Release build; source-only release with SETUP for Windows and Linux |
 
 Each milestone is at least one pull request. M0-M2 may share one, as the sister repos' did.
+**M0 and M1 were reached on 2026-10-30** (run 2: title, mode select, Evolved spawning, pause
+menu, game over, 60 fps, no trial text; HANDOFF.md). M2's capture pass is next.
 
 ## Lessons applied (what the sister repos paid for; do these before they bite)
 **Translation (M0)**

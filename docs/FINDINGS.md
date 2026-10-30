@@ -111,6 +111,28 @@ implementation (a logged stub): `XamUserCreateStatsEnumerator`, `XamShowAchievem
   C000008F on the audio worker at +2 s** (MXCSR 0x20: the game's mixer `sub_820B33E8` four
   frames under the render-driver callback `sub_82081578`, the outermost guest function on that
   thread): Quake 4's and DOA4's trap. The FPSCR guard is hooked at 0x82081578 and the four
-  `mtfsf` (manifest).
+  `mtfsf` (manifest). **Run 2 (2026-10-30), with the hooks: no exception in 90 s**, the audio
+  worker's callback (`82092510`, the one XAudio render-driver client) ran throughout.
+
+### Run 2 facts (2026-10-30, `boot.txt`, 90 s, Windows, RTX 4090, 720p windowed)
+- **Boots to the game**: the Bizarre Creations logo (a dotted pumpkin) is up at +3 s; one START
+  lands on "Select game mode" (Evolved / Retro / Back) with the title's particle field; START
+  on Evolved spawns the ship (the blue spawn flash, the grid, the stars); enemies (pinwheels,
+  diamonds) arrive; the pause menu is Resume game / Help and options / Leaderboards /
+  Achievements / Return to main menu; game over reads "Final score: 0" with "Continue". The HUD
+  shows Score, lives and bombs (three hexagons each), **Highscore 10,000** (the table's seed).
+- **No sign-in prompt** was shown and no `XamShowSigninUI` call appears in the log: the runtime
+  answers the sign-in state without a dialog. **No trial text** anywhere (`license_mask 1`).
+- **60 Hz**: every 10 s window of the frame log averaged 60.0 fps (median 16.65 ms, 1% low
+  53-55 fps, 80-87% of presents on the 60 Hz vblank); one 238 ms stall in the window that held
+  the game over (`XSessionWriteStats` / `XSessionEnd` at +40 s, the stats write at the end of a
+  game, no pipeline creation then). 32 pipeline/shader creations in all, all in the first minute.
+- **Audio**: the SDL endpoint at 48 kHz stereo; `XAudioSubmitRenderDriverFrame` from the game's
+  mixer, queue depth 4-8 frames; not yet listened to (an audio dump is the check).
+- Log noise, all once: `gamecontrollerdb.txt` missing, "Achievement store: refusing achievement
+  with ID 0" (the store loaded 11 entries), one skipped Vulkan present on the first frame
+  ("async placeholder draw"). `XMPGetPlaybackController` polled every 30 ms throughout.
+- The game's "Highscore" seed and the achievements come from the profile/achievement store under
+  `port/user-smoke` (the smoke run's own user directory).
 - `tools/check_switch_tables.py`, `check_vector_aliasing.py`, `find_missed_functions.py`,
   `find_code_pointers.py`: after the first codegen.

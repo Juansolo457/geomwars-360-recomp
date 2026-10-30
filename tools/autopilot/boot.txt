@@ -1,15 +1,10 @@
-# First-boot script (not yet run against the game): START through the title screen, then A
-# every 3 s to accept the sign-in prompt and take the first entry of each menu (ui_pad.cpp turns
-# A into Enter for the runtime's dialogs). B is never pressed.
-#   pwsh -NoProfile -File tools/smoke.ps1 -Seconds 90 -CaptureEvery 3 -Autopilot tools/autopilot/boot.txt
-# Times are guesses: an Arcade title has no logo reel, so the title should be up within seconds;
-# fix them from the first run's log and captures.
+# First-boot script, timings fixed from run 2 (2026-10-30): the Bizarre logo plays on its own
+# (still up at +3 s), one START at 5 s lands on "Select game mode" (Evolved / Retro / Back, up by
+# +6 s), the START at 8 s takes Evolved (the spawn flash by +9 s). No sign-in prompt showed and
+# nothing else asks for a press. A third START pauses the game (run 2's script did that at 11 s:
+# the pause menu is Resume game / Help and options / Leaderboards / Achievements / Return to main
+# menu; A resumes), so there is none here. The ship then sits still and loses its three lives by
+# about +40 s (game over, "Continue"); menu.txt is the script that plays. B is never pressed.
+#   pwsh -NoProfile -File tools/smoke.ps1 -Seconds 60 -CaptureEvery 3 -Autopilot tools/autopilot/boot.txt
 5.0 START
 8.0 START
-11.0 START
-15.0 A
-18.0 A
-21.0 A
-24.0 A
-27.0 A
-30.0 A

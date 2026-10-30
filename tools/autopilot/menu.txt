@@ -1,12 +1,42 @@
-# Into a game of Evolved (not yet run against the game): START on the title, then A for the
-# first entry of each menu (Evolved is expected first). The ship then sits still until the
-# capture pass gets stick moves (port/src/autopilot.h documents the script's stick lines).
-# B is never pressed.
+# A game of Evolved for the capture pass (timings from run 2, 2026-10-30, see boot.txt): START
+# at 5 s to "Select game mode", START at 8 s into Evolved. From 10 s the left stick walks the
+# ship round a square while the right stick fires ahead of it (stick lines: lx ly rx ry,
+# -1..1, held for the given seconds), a bomb on the right trigger once a minute. B is never
+# pressed. Lives run out when they run out; the game-over "Continue" is left on screen.
 #   pwsh -NoProfile -File tools/smoke.ps1 -Seconds 120 -CaptureEvery 3 -Autopilot tools/autopilot/menu.txt
-# Times are guesses until the first run (boot.txt) fixes them.
 5.0 START
-10.0 START
-15.0 A
-20.0 A
-25.0 A
-30.0 A
+8.0 START
+10.0 stick  0.0  1.0  0.0  1.0 hold 3
+13.0 stick  1.0  0.0  1.0  0.0 hold 3
+16.0 stick  0.0 -1.0  0.0 -1.0 hold 3
+19.0 stick -1.0  0.0 -1.0  0.0 hold 3
+22.0 stick  0.0  1.0  0.0  1.0 hold 3
+25.0 stick  1.0  0.0  1.0  0.0 hold 3
+28.0 stick  0.0 -1.0  0.0 -1.0 hold 3
+31.0 stick -1.0  0.0 -1.0  0.0 hold 3
+34.0 stick  0.0  1.0  0.0  1.0 hold 3
+37.0 stick  1.0  0.0  1.0  0.0 hold 3
+40.0 stick  0.0 -1.0  0.0 -1.0 hold 3
+43.0 stick -1.0  0.0 -1.0  0.0 hold 3
+46.0 stick  0.0  1.0  0.0  1.0 hold 3
+49.0 stick  1.0  0.0  1.0  0.0 hold 3
+52.0 stick  0.0 -1.0  0.0 -1.0 hold 3
+55.0 stick -1.0  0.0 -1.0  0.0 hold 3
+58.0 trigger 0.0 1.0 hold 0.3
+58.0 stick  0.0  1.0  0.0  1.0 hold 3
+61.0 stick  1.0  0.0  1.0  0.0 hold 3
+64.0 stick  0.0 -1.0  0.0 -1.0 hold 3
+67.0 stick -1.0  0.0 -1.0  0.0 hold 3
+70.0 stick  0.0  1.0  0.0  1.0 hold 3
+73.0 stick  1.0  0.0  1.0  0.0 hold 3
+76.0 stick  0.0 -1.0  0.0 -1.0 hold 3
+79.0 stick -1.0  0.0 -1.0  0.0 hold 3
+82.0 stick  0.0  1.0  0.0  1.0 hold 3
+85.0 stick  1.0  0.0  1.0  0.0 hold 3
+88.0 stick  0.0 -1.0  0.0 -1.0 hold 3
+91.0 stick -1.0  0.0 -1.0  0.0 hold 3
+94.0 stick  0.0  1.0  0.0  1.0 hold 3
+97.0 stick  1.0  0.0  1.0  0.0 hold 3
+100.0 stick  0.0 -1.0  0.0 -1.0 hold 3
+103.0 stick -1.0  0.0 -1.0  0.0 hold 3
+106.0 trigger 0.0 1.0 hold 0.3
