@@ -1,0 +1,23 @@
+# The memory-scan run (docs/RECLINED.md R0): into Evolved as boot.txt does, then slow,
+# one-direction stick legs so the ship's coordinates change steadily across several snapshots,
+# then firing to move the score, a bomb, then nothing until the lives run out.
+#   pwsh -NoProfile -File tools/smoke.ps1 -Seconds 110 -CaptureEvery 2 -Autopilot tools/autopilot/memscan.txt -Tag memscan -Extra '--geomwars_memscan=<abs path>\private\memscan\run1'
+# With --geomwars_memscan_every_ms at its default 2000 the snapshots and the captures line up.
+#  10-20 s  right at a quarter deflection (x rises), no fire
+#  22-32 s  left (x falls)
+#  34-44 s  up (y rises; +y is up on the stick)
+#  46-56 s  down (y falls)
+#  58-70 s  still, firing right, up, left, down for 3 s each (the score moves)
+#  72 s     a bomb (bombs 3 -> 2)
+#  then     still and not firing until the game ends (lives 3 -> 0)
+5.0 START
+8.0 START
+10.0 stick  0.25  0.0   0.0  0.0 hold 10
+22.0 stick -0.25  0.0   0.0  0.0 hold 10
+34.0 stick  0.0   0.25  0.0  0.0 hold 10
+46.0 stick  0.0  -0.25  0.0  0.0 hold 10
+58.0 stick  0.0   0.0   1.0  0.0 hold 3
+61.0 stick  0.0   0.0   0.0  1.0 hold 3
+64.0 stick  0.0   0.0  -1.0  0.0 hold 3
+67.0 stick  0.0   0.0   0.0 -1.0 hold 3
+72.0 trigger 0.0 1.0 hold 0.3
