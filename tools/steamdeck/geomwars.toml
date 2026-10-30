@@ -1,0 +1,19 @@
+# GEOMWARS 360 recomp on the Steam Deck (native Linux): the options the PC launcher (tools/launch.ps1)
+# passes on its command line. geomwars reads this file from its own folder at start-up; a
+# --name=value after the launcher (Steam's launch options: %command% --name=value) beats it.
+
+# Fullscreen, the guest told it is on a 1280x720 display (the Deck's screen is 1280x800).
+fullscreen = true
+resolution = "720p"
+
+# The Deck's default is the console's own 720p (the user's call, 2026-10-29); the Windows launcher
+# defaults to 1440p (2). 1-3 are supported.
+resolution_scale = 1
+
+# 16x anisotropic filtering (the SDK's enum: 5 = 16x, -1 = the game's own).
+anisotropic_override = 5
+
+
+# Write the log out every second: a run Steam closes is killed, and without this the last
+# minutes of the log are lost.
+log_flush_interval = 1

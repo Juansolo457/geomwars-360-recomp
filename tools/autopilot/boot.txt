@@ -1,0 +1,15 @@
+# First-boot script (not yet run against the game): START through the title screen, then A
+# every 3 s to accept the sign-in prompt and take the first entry of each menu (ui_pad.cpp turns
+# A into Enter for the runtime's dialogs). B is never pressed.
+#   pwsh -NoProfile -File tools/smoke.ps1 -Seconds 90 -CaptureEvery 3 -Autopilot tools/autopilot/boot.txt
+# Times are guesses: an Arcade title has no logo reel, so the title should be up within seconds;
+# fix them from the first run's log and captures.
+5.0 START
+8.0 START
+11.0 START
+15.0 A
+18.0 A
+21.0 A
+24.0 A
+27.0 A
+30.0 A

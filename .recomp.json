@@ -1,0 +1,17 @@
+{
+  "$schema": "https://recomp.fyi/schema/v1.json",
+  "game": "Geometry Wars: Retro Evolved",
+  "system": "Xbox 360",
+  "type": "recomp",
+  "original": {
+    "region": "World (Xbox Live Arcade)"
+  },
+  "project": "Geometry Wars: Retro Evolved 360 Recompiled",
+  "status": "in-progress",
+  "targets": ["Windows"],
+  "toolchain": "Rexglue",
+  "approach": "The Xbox Live Arcade default.xex statically recompiled to x86-64 C++ with ReXGlue, a game-specific runtime standing in for the Xbox, drawn by the SDK's Xenos renderer on Vulkan only (no D3D12). Windows first, then native Linux and the Steam Deck.",
+  "notes": "Started 2026-10-30 with the shape and lessons of the sister 360 recomps (Prey, DOA4, LOTR Conquest, Quake 4, DOAX2, GRAW, F.E.A.R.). Bizarre Creations' launch-day Arcade title (2005). Goal: the full game (Evolved and Retro) on Windows at the console's 60 fps, gamepad only (the game has no keyboard path), then Linux. No game data included: bring your own Xbox Live Arcade package.",
+  "tags": ["vulkan", "steam-deck", "xbla"],
+  "maintainers": [{ "name": "Juansolo457", "link": "https://github.com/Juansolo457" }]
+}

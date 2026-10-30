@@ -1,0 +1,59 @@
+# CodeRabbit reviews every pull request into master (CONTRIBUTING.md). Review threads must be
+# resolved before a merge, so keep the noise useful: the host code is reviewed for the guest/host
+# boundary and the Vulkan-only invariant, the manifest for proven addresses, the SDK patches for
+# staying generic, the tools for what they may let through.
+# yaml-language-server: $schema=https://coderabbit.ai/integrations/schema.v2.json
+language: en-US
+early_access: false
+reviews:
+  profile: assertive
+  request_changes_workflow: false
+  high_level_summary: true
+  poem: false
+  review_status: true
+  collapse_walkthrough: true
+  auto_review:
+    enabled: true
+    drafts: false
+    base_branches:
+      - master
+  path_filters:
+    - "!port/generated/**"
+    - "!port/assets/**"
+    - "!private/**"
+    - "!**/out/**"
+    - "!third_party/**"
+    - "!.tools/**"
+  path_instructions:
+    - path: "port/src/**"
+      instructions: >
+        Host code around ReXGlue-translated PowerPC guest code (Geometry Wars: Retro Evolved, Xbox 360, an Xbox Live Arcade title).
+        Vulkan is the only render API: flag any D3D12 backend, option or fallback. Check guest
+        pointer handling (32-bit guest addresses, big-endian loads), cvar lifecycles, thread
+        safety (the game's threads and fibers run through the SDK's kernel layer; the renderer has
+        its own thread), and that nothing from the game (data, strings, code) is pasted in beyond
+        the addresses a hook needs. Windows builds today; Linux must keep compiling (no Windows-only
+        API outside #if defined(_WIN32)).
+    - path: "port/geomwars_manifest.toml"
+      instructions: >
+        Function hints for the code generator. Every address must have a comment saying which
+        round and which evidence proved it (codegen warning, finder script, disassembly). Nothing
+        here may contain game bytes or code. A dropped candidate stays as a comment with the reason.
+    - path: "tools/patches/**"
+      instructions: >
+        Patches to the ReXGlue SDK (BSD-3-Clause). They must stay generic and upstreamable: no
+        Geometry Wars-specific behaviour (that belongs in port/src), no change that could break the sister
+        projects sharing the same SDK tree. Each patch is listed in tools/setup.ps1 with a one-line
+        reason and the expected tree hash moves with it.
+    - path: "tools/**"
+      instructions: >
+        PowerShell and Python scripts run against untrusted game files (python -I). audit_repo.py
+        and test_audit_repo.py guard what reaches the repository: treat loosening a rule there as
+        a security review. Scripts that open a game window or build must say so in their header.
+    - path: "docs/**"
+      instructions: >
+        Keep claims consistent with PLAN.md, HANDOFF.md and FINDINGS.md; flag stale facts, dates
+        in the future, and any promise of binaries or game files (releases are source only).
+        Never record where a game copy came from.
+chat:
+  auto_reply: true

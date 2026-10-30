@@ -1,0 +1,19 @@
+diff --git a/src/core/fiber_posix.cpp b/src/core/fiber_posix.cpp
+index 4fe1ca6..4615090 100644
+--- a/src/core/fiber_posix.cpp
++++ b/src/core/fiber_posix.cpp
+@@ -69,9 +69,12 @@ void Fiber::SwitchTo(Fiber* target) {
+ }
+ 
+ void Fiber::Destroy() {
+-  // Thread fibers are destroyed from the owning thread itself.
++  // A thread fiber may be destroyed from another thread (~XThread runs where the last handle
++  // to the thread is closed): only forget it here if it is this thread's current fiber.
++  // Clearing tls_current_ unconditionally nulled the closing thread's own fiber, and its next
++  // SwitchTo saved into a null context (doax2-360-recomp: crash at start-up on Linux).
+   if (is_thread_fiber_) {
+-    tls_current_ = nullptr;
++    if (tls_current_ == this) tls_current_ = nullptr;
+   } else {
+     assert(this != tls_current_ && "Destroy called on the currently running fiber");
+   }

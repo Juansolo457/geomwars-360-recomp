@@ -1,0 +1,37 @@
+# Geometry Wars: Retro Evolved (Xbox 360, Xbox Live Arcade), the LIVE package 584107ED:
+# default.xex v0.0.1.1, title 584107ED, built 2005-11-02,
+# SHA-256 33ae21996edb93478d5eef4f58ae0bec5f5411d3b6a7103a2141bd9f6154ff45 (tools/build.ps1 checks it).
+# Scaffold as `rexglue init` writes it (ReXGlue v0.10.0.24-dev.gbd833a2). Function hints go below
+# in rounds, each with a comment saying where it came from (codegen warnings,
+# tools/find_missed_functions.py, tools/check_switch_tables.py, tools/find_code_pointers.py,
+# tools/find_vcall_thunks.py). Fix missing functions here, never in the generated code.
+
+[project]
+name = "geomwars"
+sdk_version = "0.10.0"
+game_root = "assets"
+
+[entrypoint]
+file_path = "assets/default.xex"
+out_directory_path = "generated/default"
+includes = []
+# The C runtime's setjmp/longjmp (MS CRT layout: f14-f31 at 0, r1 at 144, r13.. from 152 as std).
+# Found 2026-10-30 by matching Prey's pair (0x822ECC00 / 0x822EC9B0, itself matched from DOA4's)
+# over 24 instructions with immediates and branch targets masked: one hit each in this image.
+# The image carries libpng and libjpeg, whose error exits longjmp. Named here, codegen emits
+# ppc_setjmp/ppc_longjmp instead of translating the stack games.
+setjmp_address = 0x82099830
+longjmp_address = 0x82099600
+
+[entrypoint.functions]
+# Round 1 (2026-10-30): the scaffold. Nothing yet: the first codegen run (after the user's OK,
+# docs/HANDOFF.md) says whether this image needs any hint; then tools/find_missed_functions.py,
+# tools/find_code_pointers.py and tools/check_switch_tables.py on the decrypted image.
+
+# The game's own frame rate and the RenderDoc capture trigger (src/frame_timing.cpp): just before
+# its one call to VdSwap (the import thunk at 0x820E2504), the only `bl` to it in .text, at
+# 0x82032A1C (found 2026-10-30 by scanning the decrypted image for branches to the thunk).
+[[entrypoint.midasm_hook]]
+name = "GeomWarsFrameMark"
+address = 0x82032A1C
+registers = []

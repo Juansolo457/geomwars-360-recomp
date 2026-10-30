@@ -1,0 +1,185 @@
+diff --git a/src/core/socket_posix.cpp b/src/core/socket_posix.cpp
+index b4b885a..f0e52ef 100644
+--- a/src/core/socket_posix.cpp
++++ b/src/core/socket_posix.cpp
+@@ -3,17 +3,58 @@
+ 
+ static_assert(REX_PLATFORM_LINUX || REX_PLATFORM_MAC, "This file is POSIX-only");
+ 
++#include <cerrno>
++#include <cstring>
++
+ #include <sys/ioctl.h>
+ #include <unistd.h>
+ 
+ namespace rex::net {
+ 
++namespace {
++// The guest calls ioctlsocket with Winsock's command codes and a big-endian u_long; Linux's
++// ioctl has its own codes (FIONBIO is 0x5421, not 0x8004667E) and reads a host int. Passed
++// through unchanged, the call failed, so a game's non-blocking socket stayed blocking and its
++// recvfrom waited for ever (doax2-360-recomp: system link's socket, no first frame on Linux).
++// Any other command goes to ioctl as it is, as before.
++constexpr uint32_t kWinsockFionbio = 0x8004667E;
++constexpr uint32_t kWinsockFionread = 0x4004667F;
++
++uint32_t LoadBe32(const uint8_t* p) {
++  uint32_t v;
++  std::memcpy(&v, p, sizeof(v));
++  return __builtin_bswap32(v);
++}
++void StoreBe32(uint8_t* p, uint32_t v) {
++  v = __builtin_bswap32(v);
++  std::memcpy(p, &v, sizeof(v));
++}
++}  // namespace
++
+ int socket_close(SocketHandle handle) {
+   return close(static_cast<int>(handle));
+ }
+ 
+ int socket_ioctl(SocketHandle handle, uint32_t cmd, uint8_t* arg) {
+-  return ioctl(static_cast<int>(handle), cmd, arg);
++  const int fd = static_cast<int>(handle);
++  if ((cmd == kWinsockFionbio || cmd == kWinsockFionread) && !arg) {
++    errno = EFAULT;
++    return -1;
++  }
++  switch (cmd) {
++    case kWinsockFionbio: {
++      int non_blocking = LoadBe32(arg) != 0;
++      return ioctl(fd, FIONBIO, &non_blocking);
++    }
++    case kWinsockFionread: {
++      int available = 0;
++      const int ret = ioctl(fd, FIONREAD, &available);
++      if (ret == 0) StoreBe32(arg, static_cast<uint32_t>(available));
++      return ret;
++    }
++    default:
++      return ioctl(fd, cmd, arg);
++  }
+ }
+ 
+ }  // namespace rex::net
+diff --git a/src/kernel/xam/xam_net.cpp b/src/kernel/xam/xam_net.cpp
+index 6e9ac8a..043df0f 100644
+--- a/src/kernel/xam/xam_net.cpp
++++ b/src/kernel/xam/xam_net.cpp
+@@ -38,6 +38,8 @@
+ #define _WINSOCK_DEPRECATED_NO_WARNINGS  // inet_addr
+ #include <winsock2.h>                    // NOLINT(build/include_order)
+ #elif REX_PLATFORM_LINUX || REX_PLATFORM_MAC
++#include <cerrno>
++
+ #include <arpa/inet.h>
+ #include <netinet/in.h>
+ #include <netinet/ip.h>
+@@ -50,6 +52,45 @@ namespace xam {
+ using namespace rex::system;
+ using namespace rex::system::xam;
+ 
++namespace {
++// The guest's last error after a failed socket call, as a Winsock code. On POSIX the host reports
++// errno, and passing 0 instead left a game polling a non-blocking socket unable to see
++// WSAEWOULDBLOCK, so it never stopped (doax2-360-recomp: system link at start-up on Linux).
++void SetLastSocketError() {
++#if REX_PLATFORM_WIN32
++  XThread::SetLastError(WSAGetLastError());
++#else
++  uint32_t code;
++  switch (errno) {
++    case EWOULDBLOCK: code = 10035; break;  // WSAEWOULDBLOCK (EAGAIN is the same on Linux)
++    case EINPROGRESS: code = 10036; break;
++    case EALREADY: code = 10037; break;
++    case ENOTSOCK: code = 10038; break;
++    case EDESTADDRREQ: code = 10039; break;
++    case EMSGSIZE: code = 10040; break;
++    case EADDRINUSE: code = 10048; break;
++    case EADDRNOTAVAIL: code = 10049; break;
++    case ENETDOWN: code = 10050; break;
++    case ENETUNREACH: code = 10051; break;
++    case ECONNABORTED: code = 10053; break;
++    case ECONNRESET: code = 10054; break;
++    case ENOBUFS: code = 10055; break;
++    case EISCONN: code = 10056; break;
++    case ENOTCONN: code = 10057; break;
++    case ESHUTDOWN: code = 10058; break;
++    case ETIMEDOUT: code = 10060; break;
++    case ECONNREFUSED: code = 10061; break;
++    case EHOSTUNREACH: code = 10065; break;
++    case EINTR: code = 10004; break;
++    case EACCES: code = 10013; break;
++    case EFAULT: code = 10014; break;
++    default: code = 10022; break;  // WSAEINVAL
++  }
++  XThread::SetLastError(code);
++#endif
++}
++}  // namespace
++
+ // https://github.com/G91/TitanOffLine/blob/1e692d9bb9dfac386d08045ccdadf4ae3227bb5e/xkelib/xam/xamNet.h
+ enum {
+   XNCALLER_INVALID = 0x0,
+@@ -620,12 +661,7 @@ i32 NetDll_shutdown_entry(u32 caller, u32 socket_handle, i32 how) {
+ 
+   auto ret = socket->Shutdown(how);
+   if (ret == -1) {
+-#if REX_PLATFORM_WIN32
+-    uint32_t error_code = WSAGetLastError();
+-    XThread::SetLastError(error_code);
+-#else
+-    XThread::SetLastError(0x0);
+-#endif
++    SetLastSocketError();
+   }
+   return ret;
+ }
+@@ -855,7 +891,9 @@ u32 NetDll_recv_entry(u32 caller, u32 socket_handle, mapped_void buf_ptr, u32 bu
+     return -1;
+   }
+ 
+-  return socket->Recv(buf_ptr, buf_len, flags);
++  int ret = socket->Recv(buf_ptr, buf_len, flags);
++  if (ret == -1) SetLastSocketError();
++  return ret;
+ }
+ 
+ u32 NetDll_recvfrom_entry(u32 caller, u32 socket_handle, mapped_void buf_ptr, u32 buf_len,
+@@ -886,13 +924,7 @@ u32 NetDll_recvfrom_entry(u32 caller, u32 socket_handle, mapped_void buf_ptr, u3
+   }
+ 
+   if (ret == -1) {
+-// TODO: Better way of getting the error code
+-#if REX_PLATFORM_WIN32
+-    uint32_t error_code = WSAGetLastError();
+-    XThread::SetLastError(error_code);
+-#else
+-    XThread::SetLastError(0x0);
+-#endif
++    SetLastSocketError();
+   }
+ 
+   return ret;
+@@ -906,7 +938,9 @@ u32 NetDll_send_entry(u32 caller, u32 socket_handle, mapped_void buf_ptr, u32 bu
+     return -1;
+   }
+ 
+-  return socket->Send(buf_ptr, buf_len, flags);
++  int ret = socket->Send(buf_ptr, buf_len, flags);
++  if (ret == -1) SetLastSocketError();
++  return ret;
+ }
+ 
+ u32 NetDll_sendto_entry(u32 caller, u32 socket_handle, mapped_void buf_ptr, u32 buf_len, u32 flags,
+@@ -919,7 +953,9 @@ u32 NetDll_sendto_entry(u32 caller, u32 socket_handle, mapped_void buf_ptr, u32
+   }
+ 
+   N_XSOCKADDR_IN native_to(to_ptr);
+-  return socket->SendTo(buf_ptr, buf_len, flags, &native_to, to_len);
++  int ret = socket->SendTo(buf_ptr, buf_len, flags, &native_to, to_len);
++  if (ret == -1) SetLastSocketError();
++  return ret;
+ }
+ 
+ u32 NetDll___WSAFDIsSet_entry(u32 socket_handle, ppc_ptr_t<x_fd_set> fd_set) {

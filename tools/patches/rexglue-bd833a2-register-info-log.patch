@@ -1,0 +1,17 @@
+diff --git a/src/graphics/command_processor.cpp b/src/graphics/command_processor.cpp
+index 8ba29fa..713f5ae 100644
+--- a/src/graphics/command_processor.cpp
++++ b/src/graphics/command_processor.cpp
+@@ -361,7 +361,11 @@ void CommandProcessor::WriteRegister(uint32_t index, uint32_t value) {
+ 
+   // Volatile for the WAIT_REG_MEM loop.
+   const_cast<volatile uint32_t&>(regs.values[index]) = value;
+-  if (!regs.GetRegisterInfo(index)) {
++  // Only when the message would be written: GetRegisterInfo is a switch over all 0x5003
++  // registers, and on the Steam Deck it was a tenth of this thread's time, which the frame rate
++  // waits on (geomwars-360-recomp).
++  if (auto* gpu_log = ::rex::GetLoggerRaw(::rex::log::gpu());
++      gpu_log && gpu_log->should_log(spdlog::level::debug) && !regs.GetRegisterInfo(index)) {
+     REXGPU_DEBUG("GPU: Write to unknown register ({:04X} = {:08X})", index, value);
+   }
+ 

@@ -1,0 +1,12 @@
+# Into a game of Evolved (not yet run against the game): START on the title, then A for the
+# first entry of each menu (Evolved is expected first). The ship then sits still until the
+# capture pass gets stick moves (port/src/autopilot.h documents the script's stick lines).
+# B is never pressed.
+#   pwsh -NoProfile -File tools/smoke.ps1 -Seconds 120 -CaptureEvery 3 -Autopilot tools/autopilot/menu.txt
+# Times are guesses until the first run (boot.txt) fixes them.
+5.0 START
+10.0 START
+15.0 A
+20.0 A
+25.0 A
+30.0 A

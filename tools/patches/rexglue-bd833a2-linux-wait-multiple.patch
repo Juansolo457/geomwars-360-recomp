@@ -1,0 +1,138 @@
+diff --git a/src/core/threading_posix.cpp b/src/core/threading_posix.cpp
+index 9ac8d15..3e4037f 100644
+--- a/src/core/threading_posix.cpp
++++ b/src/core/threading_posix.cpp
+@@ -267,6 +267,14 @@ static sem_t* RexCreateAnonymousSemaphore() {
+ }
+ #endif  // __APPLE__
+ 
++// WaitMultiple can't sleep on one handle's condition variable, so it sleeps on this one: each
++// change that may signal a handle (PosixConditionBase::NotifyAll) moves the generation on and,
++// while a thread sleeps in WaitMultiple, wakes them all to look at their handles again.
++static std::atomic<uint64_t> wait_multiple_generation{0};
++static std::atomic<uint32_t> wait_multiple_sleepers{0};
++static std::mutex wait_multiple_mutex;
++static std::condition_variable wait_multiple_cond;
++
+ class PosixConditionBase {
+  public:
+   PosixConditionBase() {
+@@ -336,6 +344,8 @@ class PosixConditionBase {
+                         : start_time + timeout;
+ 
+     while (true) {
++      // Before the look at the handles: a signal after it moves the generation on.
++      const uint64_t generation = wait_multiple_generation.load();
+       size_t first_signaled = std::numeric_limits<size_t>::max();
+       bool condition_met = false;
+       bool all_locked = true;
+@@ -411,13 +421,20 @@ class PosixConditionBase {
+         return std::make_pair<WaitResult, size_t>(WaitResult::kTimeout, 0);
+       }
+ 
+-      if (timeout == std::chrono::milliseconds::max()) {
+-        std::this_thread::sleep_for(std::chrono::milliseconds(1));
+-      } else {
+-        auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(end_time - now);
+-        auto sleep_time = std::min(remaining, std::chrono::milliseconds(1));
+-        std::this_thread::sleep_for(sleep_time);
++      // Sleep until a handle may have been signaled, the timeout or 1 ms, whichever comes first
++      // (1 ms as before, for a change that doesn't come through NotifyAll). This slept
++      // min(remaining, 1 ms) in whole milliseconds: 0 in a wait's last millisecond, so always 0
++      // in an alertable wait, which comes here in 1 ms slices. A thread waiting on several
++      // handles spun: on the Steam Deck the audio worker took a core (geomwars-360-recomp).
++      const auto wake_time = std::min(end_time, now + std::chrono::milliseconds(1));
++      wait_multiple_sleepers.fetch_add(1);
++      {
++        std::unique_lock<std::mutex> lock(wait_multiple_mutex);
++        wait_multiple_cond.wait_until(lock, wake_time, [generation] {
++          return wait_multiple_generation.load() != generation;
++        });
+       }
++      wait_multiple_sleepers.fetch_sub(1);
+     }
+   }
+ 
+@@ -428,6 +445,17 @@ class PosixConditionBase {
+  protected:
+   inline virtual bool signaled() const = 0;
+   inline virtual void post_execution() = 0;
++  // With mutex_ held, after a change that may signal this handle: wakes its own waiters and the
++  // threads in WaitMultiple. The sleepers count is read after the generation moves on, and a
++  // sleeper counts itself before it looks at the generation, so one of them sees the other.
++  void NotifyAll() {
++    cond_.notify_all();
++    wait_multiple_generation.fetch_add(1);
++    if (wait_multiple_sleepers.load() != 0) {
++      std::lock_guard<std::mutex> lock(wait_multiple_mutex);
++      wait_multiple_cond.notify_all();
++    }
++  }
+   std::condition_variable cond_;
+   std::mutex mutex_;
+ };
+@@ -449,7 +477,7 @@ class PosixCondition<Event> : public PosixConditionBase {
+   bool Signal() override {
+     auto lock = std::unique_lock<std::mutex>(mutex_);
+     signal_ = true;
+-    cond_.notify_all();
++    NotifyAll();
+     return true;
+   }
+ 
+@@ -486,7 +514,7 @@ class PosixCondition<Semaphore> : public PosixConditionBase {
+       *out_previous_count = count_;
+     }
+     count_ += release_count;
+-    cond_.notify_all();
++    NotifyAll();
+     return true;
+   }
+ 
+@@ -518,7 +546,7 @@ class PosixCondition<Mutant> : public PosixConditionBase {
+       --count_;
+       // Free to be acquired by another thread
+       if (count_ == 0) {
+-        cond_.notify_all();
++        NotifyAll();
+       }
+       return true;
+     }
+@@ -550,7 +578,7 @@ class PosixCondition<Timer> : public PosixConditionBase {
+   bool Signal() override {
+     std::lock_guard<std::mutex> lock(mutex_);
+     signal_ = true;
+-    cond_.notify_all();
++    NotifyAll();
+     return true;
+   }
+ 
+@@ -978,7 +1006,7 @@ class PosixCondition<Thread> : public PosixConditionBase {
+ 
+       exit_code_ = exit_code;
+       signaled_ = true;
+-      cond_.notify_all();
++      NotifyAll();
+     }
+     if (is_current_thread) {
+       pthread_exit(reinterpret_cast<void*>(exit_code));
+@@ -1106,7 +1134,9 @@ std::chrono::milliseconds ComputeAlertableWaitTimeout(
+   if (deadline == std::chrono::steady_clock::time_point::max()) {
+     return kAlertablePollSlice;
+   }
+-  auto remaining = std::chrono::duration_cast<std::chrono::milliseconds>(
++  // Rounded up: a remainder under 1 ms truncated to a 0 ms wait, which returns at once, so the
++  // last millisecond of every alertable wait with a timeout spun.
++  auto remaining = std::chrono::ceil<std::chrono::milliseconds>(
+       deadline - std::chrono::steady_clock::now());
+   if (remaining <= std::chrono::milliseconds::zero()) {
+     return std::chrono::milliseconds::zero();
+@@ -1448,7 +1478,7 @@ void* PosixCondition<Thread>::ThreadStartRoutine(void* parameter) {
+     std::unique_lock<std::mutex> lock(thread->handle_.mutex_);
+     thread->handle_.exit_code_ = 0;
+     thread->handle_.signaled_ = true;
+-    thread->handle_.cond_.notify_all();
++    thread->handle_.NotifyAll();
+   }
+ 
+   current_thread_ = nullptr;
