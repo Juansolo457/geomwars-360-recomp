@@ -9,10 +9,18 @@ next model starts here, not from chat history.
 **It boots and plays (2026-10-30, run 2): the Bizarre logo, "Select game mode", Evolved with the
 grid, the ship, enemies, the bloom and the particle field, the pause menu, game over, at a
 steady 60 fps on the Vulkan backend, no sign-in prompt, no trial text.** M0 and M1 of PLAN.md
-are reached; M2 (a played game with the capture pass, the high score surviving a restart, Retro)
-is next. Nothing has been listened to yet and no stick input has been given. Branch
-`first-build`, pull request #2; PR #1 (a HANDOFF paragraph, green) is still open and its text is
-folded in below.
+are reached and **run 3 (`menu.txt`) played Evolved**: the sticks move and fire, kills score, a
+bomb clears, lives are lost, the Achievements screen fails closed, 60 fps throughout; the user
+watched and called it good. Left for M2: a high score surviving a restart, Retro, audio
+listened to. Branch `first-build`, pull request #2; PR #1 (a HANDOFF paragraph, green) is still
+open and its text is folded in below.
+
+### Run 3 (2026-10-30, `menu.txt`, closed by the user at +108 s; log `port/logs/smoke-20261030-094609.log`, 35 captures in `private/captures/geomwars-evolved-20261030-094609/`)
+- The script's stick legs work (+y is up); 3 s holds parked the ship on the arena wall, so
+  `menu.txt` now holds each leg 1.2 s. Score 800 by +91 s, a bomb at the minute, two lives lost.
+- The user took the pad: Achievements from the pause menu hit the `XamShowAchievementsUI` stub
+  and the game went on (a new game started 5 s later). Facts in FINDINGS.md "Run 3 facts".
+- All captures at 2560x1440 this time (the window was at display size; cause unverified).
 
 ### Run 2 (2026-10-30, `boot.txt` 90 s; log `port/logs/smoke-20261030-081716.log`, 29 captures in `private/captures/geomwars-boot2-20261030-081716/`)
 - +3 s the Bizarre Creations logo; +6 s "Select game mode" (one START at 5 s got there, so the
@@ -76,19 +84,18 @@ reviewed PR #1 (a summary, no threads). Pull requests are merged by the user, wi
 commit (CONTRIBUTING.md).
 
 ## Next steps (in order; each build or run needs the user's OK first)
-1. **M2 capture pass:** `tools/smoke.ps1 -Seconds 120 -CaptureEvery 3 -Autopilot
-   tools/autopilot/menu.txt -Tag evolved`. Check the stick directions (which way +y is), that the
-   ship moves and fires, that a bomb clears the screen, every capture against console footage
-   (grid warp, bloom, particles, the HUD font), the score counting. Then Retro (the second entry
-   on "Select game mode": a DOWN before the START).
+1. **M2, the rest:** (done) the Evolved capture pass, run 3. Next: Retro (the second entry on
+   "Select game mode": a DOWN before the START), and a capture-by-capture comparison against
+   console footage (grid warp, bloom, particles, the HUD font) with the 1.2 s-leg `menu.txt`.
 2. **High score persistence:** a run that scores, then a second run with the same user directory
    (`-FreshProfile` off): does "Highscore" keep the value (`XamUserWriteProfileSettings`)?
 3. **Audio:** `--geomwars_audio_dump` + `tools/audio_report.py` for levels, clipping and
    submit-rate gaps; the user listens.
-4. **Live screens fail closed:** Leaderboards and Achievements from the pause menu (DOWN, DOWN,
-   A): what the stubs return and whether the menu comes back.
-5. **Resolution and the window:** the first-frame 2560x1440 window (cosmetic), 1440p and 4K
-   runs for M3; the 238 ms game-over stall if it shows in play.
+4. **Live screens fail closed:** Achievements does (run 3). Leaderboards from the pause menu
+   (DOWN, DOWN, A) still to try, and the main menu's gamercard/leaderboard entries.
+5. **Resolution and the window:** why run 3's window was 2560x1440 (the `--resolution 720p`
+   request, or the user maximising it); 1440p and 4K runs for M3; the 238 ms game-over stall
+   if it shows in play.
 6. `tools/xeximports.py` fixed for this XEX's import table (or dropped in favour of xexdump's
    symbol list).
 7. Linux (M4) after the Windows work is merged: Prey's/DOA4's `tools/setup-linux.sh`,
@@ -141,8 +148,8 @@ pwsh -NoProfile -File tools/launch.ps1 -Windowed          # a window on the user
 | `port/src/` | host code: `geomwars_app.h` (Vulkan plugin by name, paths, controllers, licence bit), `crash_report`, `frame_timing`, `fpscr_guard` (hooked since run 1), `autopilot`, `ui_pad`, `ui_style`, `audio_dump`, `timer_resolution`, `cpu_check` |
 | `tools/patches/` | the SDK patch set `setup.ps1` applies (shared with the sister repos) and DOA4's Linux-only ones for `setup-linux.sh` |
 | `tools/setup-linux.sh`, `build-linux.sh`, `build-deck.sh`, `tools/linux/`, `tools/steamdeck/` | the native Linux and Deck builds (Prey's/DOA4's, renamed, untested here) |
-| `tools/autopilot/` | pad scripts for `smoke.ps1 -Autopilot`: `boot.txt` (two STARTs into Evolved, timings from run 2), `menu.txt` (a played game of Evolved with stick moves, not yet run) |
-| `port/logs/` | smoke logs and crash reports (ignored): `smoke-20261030-064125.log` + `crash-20261030-064127.*` (run 1), `smoke-20261030-081716.log` (run 2) |
+| `tools/autopilot/` | pad scripts for `smoke.ps1 -Autopilot`: `boot.txt` (two STARTs into Evolved, timings from run 2), `menu.txt` (a played game of Evolved with stick moves, run 3) |
+| `port/logs/` | smoke logs and crash reports (ignored): `smoke-20261030-064125.log` + `crash-20261030-064127.*` (run 1), `smoke-20261030-081716.log` (run 2), `smoke-20261030-094609.log` (run 3) |
 | `private/` | local only: decrypted image, strings and symbols (`xex/`), `analyze.py` (the one-off finder for the setjmp pair, mtfsf and the VdSwap site), captures (`captures/geomwars-boot2-*`), build and smoke logs |
 | `docs/` | PLAN, HANDOFF (this), FINDINGS, SETUP |
 

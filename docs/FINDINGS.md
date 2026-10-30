@@ -134,5 +134,23 @@ implementation (a logged stub): `XamUserCreateStatsEnumerator`, `XamShowAchievem
   ("async placeholder draw"). `XMPGetPlaybackController` polled every 30 ms throughout.
 - The game's "Highscore" seed and the achievements come from the profile/achievement store under
   `port/user-smoke` (the smoke run's own user directory).
+### Run 3 facts (2026-10-30, `menu.txt`, 108 s until the user closed the window; log `smoke-20261030-094609.log`)
+- **It plays.** The autopilot's sticks move the ship (**+y is up**) and the right stick fires:
+  bullet streams, kills, the score counting (25 at +15 s, 75 at +30 s, 800 at +91 s), a bomb
+  from the right trigger at the minute (the bomb count fell to 2), lives lost to pinwheels.
+  The arena is larger than the screen: the camera scrolls and the cyan border shows; a stick
+  held 3 s parks the ship on the wall. The grid warps under fire and explosions, the bloom and
+  the sparks look right in every capture read. 60.0 fps in all twelve 10 s windows.
+- The user took the pad during the run (every controller drives player 1): the pause menu's
+  **Achievements** was opened at +47 s, which hit the `XamShowAchievementsUI` stub (one
+  warning) **and the game carried on**: the session ended at +50 s (back to the menu) and a new
+  game started at +52 s (`XSessionStart`). So that Live screen fails closed on its own.
+- The session calls per game: `XGISessionCreateImpl`, `XGISessionJoinLocal`, `XSessionStart`,
+  `XGIUserSetContextEx` (0x8001, 0x800A, 0x800B) at the start; `XSessionWriteStats`,
+  `XSessionEnd`, `XGISessionDelete` at game over. No `XamUserWriteProfileSettings` yet: no game
+  reached a new high score.
+- All 35 captures came out at 2560x1440 this run (run 2: only the first): the capture reads
+  the client area, so the window was at the display's size; whether the user maximised it or
+  the 720p request was lost is unverified.
 - `tools/check_switch_tables.py`, `check_vector_aliasing.py`, `find_missed_functions.py`,
   `find_code_pointers.py`: after the first codegen.
