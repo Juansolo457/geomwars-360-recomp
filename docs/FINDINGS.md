@@ -91,15 +91,26 @@ implementation (a logged stub): `XamUserCreateStatsEnumerator`, `XamShowAchievem
 - Five languages: English, French, German, Spanish, Italian.
 - `D3D version is %i.%i %s, frame is %i.`: the D3D9 runtime's own banner.
 
-### Translation facts (ReXGlue `bd833a2`, 2026-10-30; codegen not yet run)
-- `.pdata` lists **1,764 functions** (0x82020000 to 0x820E2A34).
+### Translation facts (ReXGlue `bd833a2`, 2026-10-30)
+- `.pdata` lists **1,764 functions** (0x82020000 to 0x820E2A34). Round 1 (the scaffold
+  manifest) stopped on one error, `b 0x82075438 from 0x8207D764 - target not in any function`:
+  a leaf reached by a tail branch, added as the first hint; then `geomwars.exe` linked
+  (14 generated translation units, the compile about two minutes at 12 jobs).
+- Round 2: `tools/find_missed_functions.py` **34** candidates and `tools/find_code_pointers.py`
+  **26**, merged to 34 distinct, added wholesale; no "Unresolved" warning; both finders at 0
+  afterwards. `tools/find_vcall_thunks.py`: 0 unregistered forwarders.
+- `tools/check_switch_tables.py`: **34 switches, 0 wrong, 0 not replayed** (rounds 1 and 2).
+- `tools/check_vector_aliasing.py`: no read-after-write hazard in 9,120 vector instructions.
 - **setjmp** 0x82099830 and **longjmp** 0x82099600: the MS CRT pair, found by matching Prey's
   pair (0x822ECC00 / 0x822EC9B0) over 24 instructions with immediates and branch targets masked,
   one hit each.
 - **VdSwap**: the import thunk at 0x820E2504 is called from one place, the `bl` at 0x82032A1C:
   the frame hook `GeomWarsFrameMark` (manifest).
 - **mtfsf** instructions: four, at 0x8209C708, 0x8209C73C, 0x8209C75C, 0x8209C76C (the C
-  runtime's floating-point environment functions, together). The FPSCR guard's hook points if the
-  audio worker raises C000008F (Quake 4's and DOA4's trap).
+  runtime's floating-point environment functions, together). **Run 1 (2026-10-30) raised
+  C000008F on the audio worker at +2 s** (MXCSR 0x20: the game's mixer `sub_820B33E8` four
+  frames under the render-driver callback `sub_82081578`, the outermost guest function on that
+  thread): Quake 4's and DOA4's trap. The FPSCR guard is hooked at 0x82081578 and the four
+  `mtfsf` (manifest).
 - `tools/check_switch_tables.py`, `check_vector_aliasing.py`, `find_missed_functions.py`,
   `find_code_pointers.py`: after the first codegen.

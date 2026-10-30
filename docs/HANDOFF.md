@@ -6,7 +6,26 @@ state, the build/run detail and where things live. Update it at the end of every
 next model starts here, not from chat history.
 
 ## Where it stands
-**Bootstrapped 2026-10-30, nothing built yet.** The repository has the Prey shape renamed, a new
+**Built 2026-10-30 (manifest rounds 1-2 clean); run 1 died at +2 s on the audio worker's FP
+exception, the sisters' known trap; the FPSCR guard is now hooked and the rebuild and run 2 wait
+for the user's OK.** Below, the bootstrap state.
+
+### Run 1 (2026-10-30, `boot.txt` 90 s; log `port/logs/smoke-20261030-064125.log`)
+- Vulkan on the RTX 4090, `license_mask 1` logged at start, the pad found; the first pipelines
+  and render targets (a 320x8192 and a 640x4096 color target at EDRAM 0, then **1280x1024
+  2xMSAA**: the game renders 720p with 2x MSAA), `XMPGetPlaybackController` polled.
+- **Crash at +2 s: C000008F** on the audio worker (`crash-20261030-064127.txt`): the mixer
+  `sub_820B33E8` under the render-driver callback `sub_82081578`. Fix: `GeomWarsGuardFpscr`
+  hooked at the callback's entry and the four `mtfsf` (manifest), as DOA4 and Quake 4.
+  No capture was taken (the run ended before the first).
+
+### Build and codegen rounds (2026-10-30)
+1. Round 1, the scaffold manifest: one `UnresolvedCall` (0x82075438, a tail-branch leaf), added;
+   `geomwars.exe` linked. Checks: 34 switches, 0 wrong; no vpkd3d128 hazard; 34 missed
+   candidates, 26 code pointers (34 distinct), 0 vcall forwarders.
+2. Round 2 (the 34): clean, finders at 0 (FINDINGS.md).
+
+**Bootstrapped 2026-10-30.** The repository has the Prey shape renamed, a new
 STFS extractor (`tools/stfs.py`) that unpacked the Arcade package into `port/assets`, the
 decrypted image and its facts (FINDINGS.md), a scaffold manifest with the setjmp/longjmp pair and
 the VdSwap frame hook, and the host app setting the licence bit for the full game. **The first
@@ -34,13 +53,11 @@ codegen and build wait for the user's OK** (every build and run in this repo doe
   (tree `12884d9`), so `setup.ps1` sees it as done on this PC.
 
 ## Next steps (in order; each build or run needs the user's OK first)
-1. **First codegen and build:** `tools/build.ps1` (codegen of a 1.1 MB image: seconds; the
-   compile a few minutes). Then on `private/xex/default.bin`: `check_switch_tables.py`,
-   `find_missed_functions.py`, `find_code_pointers.py` (round 2 wholesale, drop any
-   "Unresolved"), `find_vcall_thunks.py`. Record the counts in FINDINGS.md "Translation facts".
-2. **First run:** `tools/smoke.ps1 -Seconds 90 -CaptureEvery 3 -Autopilot tools/autopilot/boot.txt`.
-   Expect a sign-in prompt (answer A), the title, the menu; check the log for the
-   `license_mask 1` line and that no trial text shows. Fix the script's timings from the log.
+1. **Rebuild with the FPSCR guard hooks and run 2:** `tools/build.ps1`, then
+   `tools/smoke.ps1 -Seconds 90 -CaptureEvery 3 -Autopilot tools/autopilot/boot.txt -Tag boot2`.
+   Expect a sign-in prompt (answer A), the title, the menu; check that no trial text shows.
+   Fix the script's timings from the log and captures.
+2. (done) First codegen, build and the finder rounds: FINDINGS.md "Translation facts".
 3. **M2:** `menu.txt` into Evolved, stick moves added for the capture pass; every capture checked
    (grid, bloom, particles, HUD); game over and the high score surviving a restart
    (`XamUserWriteProfileSettings`); Retro the same way.
