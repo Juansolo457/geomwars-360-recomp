@@ -153,7 +153,7 @@ pwsh -NoProfile -File tools/launch.ps1 -Windowed          # a window on the user
 | `tools/autopilot/` | pad scripts for `smoke.ps1 -Autopilot`: `boot.txt` (two STARTs into Evolved, timings from run 2), `menu.txt` (a played game of Evolved with stick moves, run 3) |
 | `port/logs/` | smoke logs and crash reports (ignored): `smoke-20261030-064125.log` + `crash-20261030-064127.*` (run 1), `smoke-20261030-081716.log` (run 2), `smoke-20261030-094609.log` (run 3) |
 | `private/` | local only: decrypted image, strings and symbols (`xex/`), `analyze.py` (the one-off finder for the setjmp pair, mtfsf and the VdSwap site), captures (`captures/geomwars-boot2-*`), build and smoke logs |
-| `docs/` | PLAN, HANDOFF (this), FINDINGS, SETUP |
+| `docs/` | PLAN, HANDOFF (this), FINDINGS, SETUP, RECLINED (the plan for a self-playing idle mode, 2026-10-30, nothing built) |
 
 ## Known traps (from the sister projects; the full list is PLAN.md "Lessons applied")
 - Jump tables on a 64 KB boundary and byte-indexed tables are misread by `bd833a2`; a
