@@ -83,12 +83,23 @@ included, force pushes and deletion off. CodeRabbit: the GitHub App covers the a
 reviewed PR #1 (a summary, no threads). Pull requests are merged by the user, with a merge
 commit (CONTRIBUTING.md).
 
+### RECLINED R0 (branch `reclined-r0` off `first-build`)
+Static half: FINDINGS.md "Game variables" (`tools/find_refs.py`). Memory scan: FINDINGS.md
+"Game variables, memory scan" (run 4). `--geomwars_memscan=<dir>` (port/src/memscan.h) writes
+snapshots, `tools/memscan.py` searches them (`list`, `values`, `search`, `trend`, `dump`), and
+`tools/autopilot/memscan.txt` is the script. Confirmed: score, live and stored high score,
+lives, bombs, the game-state word, and likely the multiplier. **Still open, and the next run
+(needs the user's OK):** the ship's x,y with the stick legs at 0.7 deflection
+(`memscan.txt` now; pass the cvar as `'-Extra:--geomwars_memscan=<abs dir>'`, because pwsh
+reads a bare `--` value as a flag), then the enemy table. R1 (the play loop) starts after.
+
 ## Next steps (in order; each build or run needs the user's OK first)
 1. **M2, the rest:** (done) the Evolved capture pass, run 3. Next: Retro (the second entry on
    "Select game mode": a DOWN before the START), and a capture-by-capture comparison against
    console footage (grid warp, bloom, particles, the HUD font) with the 1.2 s-leg `menu.txt`.
-2. **High score persistence:** a run that **beats the 10,000 seed** (run 3 reached 800 in 90 s
-   with the script; the user's own game, or a longer script, is needed), then a second run with
+2. **High score persistence:** run 4 (the memory scan) beat the 10,000 seed with the script
+   (15,450 at 108 s) but was stopped before game over and logged no profile write. Next: a run
+   that beats the seed and reaches game over, then a second run with
    the same user directory (`-FreshProfile` off): does "Highscore" show the new value, and did
    the first run log `XamUserWriteProfileSettings`?
 3. **Audio:** `--geomwars_audio_dump` + `tools/audio_report.py` for levels, clipping and

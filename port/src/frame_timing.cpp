@@ -21,6 +21,8 @@
 #include <rex/cvar.h>
 #include <rex/logging.h>
 
+#include "memscan.h"
+
 #include <renderdoc/renderdoc_app.h>
 #if defined(_WIN32)
 #define WIN32_LEAN_AND_MEAN
@@ -156,6 +158,7 @@ void GeomWarsRequestRenderDocCapture() {
 }
 
 void GeomWarsFrameMark() {
+  geomwars::memscan::OnFrame();  // off unless --geomwars_memscan (memscan.h)
   const Clock::time_point now = Clock::now();
   std::lock_guard<std::mutex> lock(g_mutex);
   MaybeTriggerCapture(now);

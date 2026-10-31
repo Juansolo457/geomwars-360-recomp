@@ -154,3 +154,61 @@ implementation (a logged stub): `XamUserCreateStatsEnumerator`, `XamShowAchievem
   the 720p request was lost is unverified.
 - `tools/check_switch_tables.py`, `check_vector_aliasing.py`, `find_missed_functions.py`,
   `find_code_pointers.py`: after the first codegen.
+
+### Game variables (RECLINED R0, static part, 2026-10-30; see the memory scan below)
+Found with `tools/find_refs.py` (lis/addi and lis/d-form references) and the generated code's
+instruction comments. Guest addresses in `.data`/`.bss` (`0x820F0000`..).
+- **New-game init `sub_820CE938`** writes a block at **`0x820FFE80`**: `std 0` at +0 (a
+  64-bit **score**, zeroed), `std 10000` at +8 and +16 (two 64-bit thresholds seeded 10,000:
+  the next extra life and the next bomb, or a high score; see below), `stw 3` at +24
+  (**lives**) and +28 (**bombs**), `stw 0` at +32; then byte `0x820FFFFC = 1`,
+  `0x820FFEAC = -1` (28 referencing sites: a "current something" index), and zeros at
+  `0x82100170`, `0x8210002C`, `0x82100010`, `0x8210000C`, `0x82100008`, `0x82100014`.
+  Eleven functions take `&0x820FFE80` as a pointer (`sub_820C0B08`, `sub_820CD4B8` twice,
+  `sub_820C7098`, `sub_820C2800`, ...), so the fields are reached through a register, not by
+  absolute address.
+- **`0x820FFEBC`** (31 sites) is compared with 2 and 3 in `sub_820C4368`, which then picks
+  score thresholds **10,000 / 75,000 / 100,000** (mode 2 or 3 with byte `0x820FFEB8` set) or
+  **2,500 / 20,000 / 25,000** otherwise: the first extra life, the life interval and the bomb
+  interval of Evolved versus Retro. So `0x820FFEBC` is a **game mode / state** word.
+- The HUD strings ("Score" `0x820144BC`, "Highscore" `0x820144C4`, "GAME OVER" `0x820144E4`,
+  "Final score" `0x82014564`, "Select game mode" `0x82014550`, "Continue" `0x820144A4`,
+  "Multiplier" `0x820144B0`) are returned by three-instruction getters (`lis; addi r3; blr`)
+  inside the string-table switch `sub_820CA7A8` (0x820CA7A8..0x820CC800), not referenced by
+  the HUD code directly: callers ask for a string id. "Paused" `0x82017E84` is used by
+  `sub_820B9B78`.
+- The profile settings go through `sub_82095318` (read) and `sub_82095380` (write), the only
+  callers of the two `XamUser*ProfileSettings` thunks; `XamInputGetState` and
+  `XamContentGetLicenseMask` are both reached only through `sub_820294C0` (tail calls);
+  `XamShowAchievementsUI` through `sub_82029578`; `XamUserCreateStatsEnumerator` through
+  `sub_82029400` / `sub_82029460`. The `XSession*` calls are not imports: they go through
+  `XMsgStartIORequest` (`0x820E2174`).
+- The memory scan (run 4, below) settled +8/+16 and found the multiplier; the ship's x,y and
+  the enemy table are still open.
+
+### Game variables, memory scan (RECLINED R0, run 4, 2026-10-30)
+`--geomwars_memscan` (port/src/memscan.h) with `tools/autopilot/memscan.txt`: 54 snapshots, one
+every 2 s, each about 10 MB of non-zero guest memory written in about 5 ms; the game held 60 fps
+(slowest frame 24.7 ms). `tools/memscan.py` reads them. The probe line per snapshot and a
+capture agree: at 100 s the HUD shows Score 14,400, Highscore 14,400, two ship icons and one bomb
+icon, and the block reads +0 14400, +8 14400, +24 2, +28 1.
+
+| Address | Type | What | Evidence |
+|---|---|---|---|
+| `0x820FFE80` (+0) | u64 BE | **score** | 0 until the first kills, 100 at 34 s, 15,450 at 108 s; matches the HUD |
+| `0x820FFE88` (+8) | u64 BE | **live high score** (HUD "Highscore") | 10,000 until the score passes it at 94 s, then equal to the score |
+| `0x820FFE90` (+16) | u64 BE | **high score at game start** (the stored best) | 10,000 all run |
+| `0x820FFE98` (+24) | u32 | **lives** | 3, then 2 at 26 s (the ship sat still and died) |
+| `0x820FFE9C` (+28) | u32 | **bombs** | 3, 2 at 30 s, 1 at 72 s (the scripted bomb) |
+| `0x820FFEBC` | u32 | **game state** | 0 at boot, 3 on the menus, 2 in play from about 14 s |
+| `0x821048F8` | u32 | **multiplier** (likely) | 1 from game start, 2 from 88 s; points per kill go from about 109 to about 227 there |
+| `0x82101E64`, `0x82101E68` | u32 | kill or spawn counters (two that move together) | 0 before the firing legs, rise with the score, both drop from 63 to a few at 92 s |
+| `0x821008D4` | u32 | frame counter | rises about 60.7 per second, never resets |
+| `0x400986A8` | f32 | game clock, seconds (heap; address may move between runs) | 2 per snapshot from game start |
+
+Open: the drop in bombs at 30 s had no bomb input (lives fell at 26 s; a timer at `0x40076008`
+restarts at both 30 s and 72 s, so the game counts it as a bomb); the ship's x,y (the left
+stick at 0.25 is inside the game's dead zone, so the ship never moved and the trend search found
+nothing; the script now uses 0.7); the enemy table (objects live on the heap, around
+`0x40098680` one slot has a code pointer at +0x50 then f32 x, y and a velocity, and changes kind
+when the slot is reused).
