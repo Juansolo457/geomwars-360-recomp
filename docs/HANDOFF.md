@@ -83,24 +83,23 @@ included, force pushes and deletion off. CodeRabbit: the GitHub App covers the a
 reviewed PR #1 (a summary, no threads). Pull requests are merged by the user, with a merge
 commit (CONTRIBUTING.md).
 
-### RECLINED R0 (branch `reclined-r0` off `first-build`, paused 2026-10-30 by the user, no PR yet)
-The static half is done (FINDINGS.md "Game variables"): the new-game block at `0x820FFE80`
-(64-bit score, two 10,000 thresholds, lives +24, bombs +28), the mode word `0x820FFEBC`, the
-string-table switch, the profile/input wrappers; `tools/find_refs.py` is the scanner. Not
-written yet: `port/src/memscan.cpp/.h` (`--geomwars_memscan=<dir>`, `--geomwars_memscan_every`,
-a snapshot of the committed guest pages from `GeomWarsFrameMark` via `VirtualQuery` over
-`kernel_state()->memory()->virtual_membase()`, 64 KB zero chunks skipped, `chunks.idx` +
-`data.bin` per snapshot), `tools/memscan.py` (find values across snapshots, trends for the
-ship's x,y under a held stick), `tools/autopilot/memscan.txt` (slow stick legs of 9 s each
-direction, a bomb at 48 s, then still). **Resume with the user's go**: write those, ask once
-for the build-and-run, then confirm the addresses from the captures' HUD values.
+### RECLINED R0 (branch `reclined-r0` off `first-build`)
+Static half: FINDINGS.md "Game variables" (`tools/find_refs.py`). Memory scan: FINDINGS.md
+"Game variables, memory scan" (run 4). `--geomwars_memscan=<dir>` (port/src/memscan.h) writes
+snapshots, `tools/memscan.py` searches them (`list`, `values`, `search`, `trend`, `dump`), and
+`tools/autopilot/memscan.txt` is the script. Confirmed: score, live and stored high score,
+lives, bombs, the game-state word, and likely the multiplier. **Still open, and the next run
+(needs the user's OK):** the ship's x,y with the stick legs at 0.7 deflection
+(`memscan.txt` now; pass the cvar as `'-Extra:--geomwars_memscan=<abs dir>'`, because pwsh
+reads a bare `--` value as a flag), then the enemy table. R1 (the play loop) starts after.
 
 ## Next steps (in order; each build or run needs the user's OK first)
 1. **M2, the rest:** (done) the Evolved capture pass, run 3. Next: Retro (the second entry on
    "Select game mode": a DOWN before the START), and a capture-by-capture comparison against
    console footage (grid warp, bloom, particles, the HUD font) with the 1.2 s-leg `menu.txt`.
-2. **High score persistence:** a run that **beats the 10,000 seed** (run 3 reached 800 in 90 s
-   with the script; the user's own game, or a longer script, is needed), then a second run with
+2. **High score persistence:** run 4 (the memory scan) beat the 10,000 seed with the script
+   (15,450 at 108 s) but was stopped before game over and logged no profile write. Next: a run
+   that beats the seed and reaches game over, then a second run with
    the same user directory (`-FreshProfile` off): does "Highscore" show the new value, and did
    the first run log `XamUserWriteProfileSettings`?
 3. **Audio:** `--geomwars_audio_dump` + `tools/audio_report.py` for levels, clipping and
