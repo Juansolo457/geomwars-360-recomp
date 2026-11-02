@@ -6,11 +6,53 @@ state, the build/run detail and where things live. Update it at the end of every
 next model starts here, not from chat history.
 
 ## Where it stands
-**Bootstrapped 2026-10-30, nothing built yet.** The repository has the Prey shape renamed, a new
-STFS extractor (`tools/stfs.py`) that unpacked the Arcade package into `port/assets`, the
-decrypted image and its facts (FINDINGS.md), a scaffold manifest with the setjmp/longjmp pair and
-the VdSwap frame hook, and the host app setting the licence bit for the full game. **The first
-codegen and build wait for the user's OK** (every build and run in this repo does, PLAN.md).
+**It boots and plays (2026-10-30, run 2): the Bizarre logo, "Select game mode", Evolved with the
+grid, the ship, enemies, the bloom and the particle field, the pause menu, game over, at a
+steady 60 fps on the Vulkan backend, no sign-in prompt, no trial text.** M0 and M1 of PLAN.md
+are reached and **run 3 (`menu.txt`) played Evolved**: the sticks move and fire, kills score, a
+bomb clears, lives are lost, the Achievements screen fails closed, 60 fps throughout; the user
+watched and called it good. Left for M2: a high score surviving a restart, Retro, audio
+listened to. Branch `first-build`, pull request #2; PR #1 (a HANDOFF paragraph, green) is still
+open and its text is folded in below.
+
+### Run 3 (2026-10-30, `menu.txt`, closed by the user at +108 s; log `port/logs/smoke-20261030-094609.log`, 35 captures in `private/captures/geomwars-evolved-20261030-094609/`)
+- The script's stick legs work (+y is up); 3 s holds parked the ship on the arena wall, so
+  `menu.txt` now holds each leg 1.2 s. Score 800 by +91 s, a bomb at the minute, two lives lost.
+- The user took the pad: Achievements from the pause menu hit the `XamShowAchievementsUI` stub
+  and the game went on (a new game started 5 s later). Facts in FINDINGS.md "Run 3 facts".
+- All captures at 2560x1440 this time (the window was at display size; cause unverified).
+
+### Run 2 (2026-10-30, `boot.txt` 90 s; log `port/logs/smoke-20261030-081716.log`, 29 captures in `private/captures/geomwars-boot2-20261030-081716/`)
+- +3 s the Bizarre Creations logo; +6 s "Select game mode" (one START at 5 s got there, so the
+  title's press-START screen takes one press); +9 s Evolved's spawn flash (START at 8 s); the
+  script's third START at 11 s **paused** the game (Resume game / Help and options / Leaderboards
+  / Achievements / Return to main menu) and its first A resumed it; the ship stood still, lost
+  its three lives by +40 s, "Game over, Final score: 0, Continue" stayed up to the end.
+- **60.0 fps in every 10 s window**, median 16.65 ms, 1% low 53-55 fps, 80-87% of presents on
+  the 60 Hz vblank. One 238 ms stall at the game-over stats write (`XSessionWriteStats`,
+  `XSessionEnd`, +40 s). 32 pipeline/shader creations, all in the first minute.
+- No crash, no exception; the FPSCR guard hooks from run 1 did it. Log noise is listed in
+  FINDINGS.md "Run 2 facts". The first capture (+3 s) came out at 2560x1440, the rest at the
+  720p window: the window is created at the display's size and resized on the first frames
+  (cosmetic; `capture_window.ps1` reads the client area).
+- The scripts now carry run 2's timings: `boot.txt` is two STARTs; `menu.txt` adds a stick
+  square-walk with the right stick firing and a bomb a minute, for the M2 capture pass.
+
+### Run 1 (2026-10-30, `boot.txt` 90 s; log `port/logs/smoke-20261030-064125.log`)
+- Vulkan on the RTX 4090, `license_mask 1` logged at start, the pad found; the first pipelines
+  and render targets (a 320x8192 and a 640x4096 color target at EDRAM 0, then **1280x1024
+  2xMSAA**: the game renders 720p with 2x MSAA), `XMPGetPlaybackController` polled.
+- **Crash at +2 s: C000008F** on the audio worker (`crash-20261030-064127.txt`): the mixer
+  `sub_820B33E8` under the render-driver callback `sub_82081578`. Fix: `GeomWarsGuardFpscr`
+  hooked at the callback's entry and the four `mtfsf` (manifest), as DOA4 and Quake 4.
+
+### Build and codegen rounds (2026-10-30)
+1. Round 1, the scaffold manifest: one `UnresolvedCall` (0x82075438, a tail-branch leaf), added;
+   `geomwars.exe` linked. Checks: 34 switches, 0 wrong; no vpkd3d128 hazard; 34 missed
+   candidates, 26 code pointers (34 distinct), 0 vcall forwarders.
+2. Round 2 (the 34): clean, finders at 0 (FINDINGS.md).
+3. The five `GeomWarsGuardFpscr` hooks: codegen regenerated four translation units; the build
+   is `private/build-4.log` (local).
 
 ### Done 2026-10-30 (bootstrap, no build)
 - Repo from `../prey-360-recomp`'s tracked files, identifiers renamed (`prey` -> `geomwars`,
@@ -33,21 +75,42 @@ codegen and build wait for the user's OK** (every build and run in this repo doe
 - The SDK install stamp `geomwars-sdk-tree` written beside the sisters' in the shared install
   (tree `12884d9`), so `setup.ps1` sees it as done on this PC.
 
+Repository: https://github.com/Juansolo457/geomwars-360-recomp, **public**, created 2026-10-30
+(wiki and projects off, branches deleted on merge, topics xbox-360, recompilation, vulkan,
+steam-deck, rexglue, xbla), the bootstrap commit on `master`. Branch protection read back from
+the API after the push: `audit` required and strict, conversation resolution on, admins
+included, force pushes and deletion off. CodeRabbit: the GitHub App covers the account; it
+reviewed PR #1 (a summary, no threads). Pull requests are merged by the user, with a merge
+commit (CONTRIBUTING.md).
+
+### Steam Deck via Proton (2026-11-01; package in `private/steamdeck/GeometryWars-SteamDeck`)
+At the user's request, before the native Linux build (M4): the base game from `first-build` under
+Proton, at `/home/deck/recomps/GeometryWars-SteamDeck/` (SSH `deck@steamdeck`), in LOTR Conquest's
+layout: `geomwars.exe` (Release), `geomwars-relwithdebinfo.exe` with its PDB, the SDK DLLs, the VC
+runtime DLLs, `geomwars.toml` (fullscreen, 720p, `resolution_scale = 1`, 16x AF, log flush every
+second, `geomwars_frame_log = "logs/frames.csv"`), `game/`, `user/`, `logs/`, and the setup in
+`README-SteamDeck.txt`. Copied and checked file by file. **Not run on the Deck yet**: the user
+tests it, and the logs are pulled over SSH.
+
+### Branches
+`retro-reclined` (off `reclined-r0`) is the remixed Geometry Wars Retro Reclined, kept apart from
+the base game. Base-game work stays on `first-build`.
+
 ## Next steps (in order; each build or run needs the user's OK first)
-1. **First codegen and build:** `tools/build.ps1` (codegen of a 1.1 MB image: seconds; the
-   compile a few minutes). Then on `private/xex/default.bin`: `check_switch_tables.py`,
-   `find_missed_functions.py`, `find_code_pointers.py` (round 2 wholesale, drop any
-   "Unresolved"), `find_vcall_thunks.py`. Record the counts in FINDINGS.md "Translation facts".
-2. **First run:** `tools/smoke.ps1 -Seconds 90 -CaptureEvery 3 -Autopilot tools/autopilot/boot.txt`.
-   Expect a sign-in prompt (answer A), the title, the menu; check the log for the
-   `license_mask 1` line and that no trial text shows. Fix the script's timings from the log.
-3. **M2:** `menu.txt` into Evolved, stick moves added for the capture pass; every capture checked
-   (grid, bloom, particles, HUD); game over and the high score surviving a restart
-   (`XamUserWriteProfileSettings`); Retro the same way.
-4. **60 Hz:** presents a second from the frame log in 10 s windows; the frame hook address
-   confirmed from the generated code (`__imp__VdSwap`'s call site should be the only one).
-5. **Live screens fail closed:** Leaderboards, Achievements, gamercard: what the stubs return
-   and whether the menu copes.
+1. **M2, the rest:** (done) the Evolved capture pass, run 3. Next: Retro (the second entry on
+   "Select game mode": a DOWN before the START), and a capture-by-capture comparison against
+   console footage (grid warp, bloom, particles, the HUD font) with the 1.2 s-leg `menu.txt`.
+2. **High score persistence:** a run that **beats the 10,000 seed** (run 3 reached 800 in 90 s
+   with the script; the user's own game, or a longer script, is needed), then a second run with
+   the same user directory (`-FreshProfile` off): does "Highscore" show the new value, and did
+   the first run log `XamUserWriteProfileSettings`?
+3. **Audio:** `--geomwars_audio_dump` + `tools/audio_report.py` for levels, clipping and
+   submit-rate gaps; the user listens.
+4. **Live screens fail closed:** Achievements does (run 3). Leaderboards from the pause menu
+   (DOWN, DOWN, A) still to try, and the main menu's gamercard/leaderboard entries.
+5. **Resolution and the window:** why run 3's window was 2560x1440 (the `--resolution 720p`
+   request, or the user maximising it); 1440p and 4K runs for M3; the 238 ms game-over stall
+   if it shows in play.
 6. `tools/xeximports.py` fixed for this XEX's import table (or dropped in favour of xexdump's
    symbol list).
 7. Linux (M4) after the Windows work is merged: Prey's/DOA4's `tools/setup-linux.sh`,
@@ -71,9 +134,11 @@ pwsh -NoProfile -File tools/launch.ps1 -Windowed          # a window on the user
   stencil-tested draws vanish here. Anyone else runs `setup.ps1` and gets their own copy.
 - `build.ps1` enters a VS 2022 DevShell, checks the XEX hash, runs `geomwars_codegen`,
   reconfigures once on the first run, then builds
-  `port/out/build/win-amd64-relwithdebinfo/geomwars.exe`.
+  `port/out/build/win-amd64-relwithdebinfo/geomwars.exe`. A manifest change regenerates only
+  the translation units it touches (the hooks: four of fourteen).
 - **Every build, codegen and run needs the user's OK** (PLAN.md, decisions). The smoke window
-  shows on the user's screen.
+  shows on the user's screen. `smoke.ps1` runs windowed at 720p with its own user and cache
+  directories (`port/user-smoke`, `port/cache-smoke`).
 
 ## Analysis tools (all read-only on the game's files)
 | | |
@@ -94,13 +159,14 @@ pwsh -NoProfile -File tools/launch.ps1 -Windowed          # a window on the user
 | | |
 |---|---|
 | `port/assets/` | the extracted package (ignored) |
-| `port/geomwars_manifest.toml` | function hints and hooks for the code generator: setjmp/longjmp, `GeomWarsFrameMark`; rounds to come |
-| `port/src/` | host code: `geomwars_app.h` (Vulkan plugin by name, paths, controllers, licence bit), `crash_report`, `frame_timing`, `fpscr_guard` (unhooked), `autopilot`, `ui_pad`, `ui_style`, `audio_dump`, `timer_resolution`, `cpu_check` |
+| `port/geomwars_manifest.toml` | function hints and hooks for the code generator: setjmp/longjmp, rounds 1-2, `GeomWarsFrameMark`, the five `GeomWarsGuardFpscr` hooks |
+| `port/src/` | host code: `geomwars_app.h` (Vulkan plugin by name, paths, controllers, licence bit), `crash_report`, `frame_timing`, `fpscr_guard` (hooked since run 1), `autopilot`, `ui_pad`, `ui_style`, `audio_dump`, `timer_resolution`, `cpu_check` |
 | `tools/patches/` | the SDK patch set `setup.ps1` applies (shared with the sister repos) and DOA4's Linux-only ones for `setup-linux.sh` |
 | `tools/setup-linux.sh`, `build-linux.sh`, `build-deck.sh`, `tools/linux/`, `tools/steamdeck/` | the native Linux and Deck builds (Prey's/DOA4's, renamed, untested here) |
-| `tools/autopilot/` | pad scripts for `smoke.ps1 -Autopilot`: `boot.txt` (title and menu, timings guessed), `menu.txt` (into Evolved) |
-| `private/` | local only: decrypted image, strings and symbols (`xex/`), `analyze.py` (the one-off finder for the setjmp pair, mtfsf and the VdSwap site), captures, build and smoke logs |
-| `docs/` | PLAN, HANDOFF (this), FINDINGS, SETUP |
+| `tools/autopilot/` | pad scripts for `smoke.ps1 -Autopilot`: `boot.txt` (two STARTs into Evolved, timings from run 2), `menu.txt` (a played game of Evolved with stick moves, run 3) |
+| `port/logs/` | smoke logs and crash reports (ignored): `smoke-20261030-064125.log` + `crash-20261030-064127.*` (run 1), `smoke-20261030-081716.log` (run 2), `smoke-20261030-094609.log` (run 3) |
+| `private/` | local only: decrypted image, strings and symbols (`xex/`), `analyze.py` (the one-off finder for the setjmp pair, mtfsf and the VdSwap site), captures (`captures/geomwars-boot2-*`), build and smoke logs |
+| `docs/` | PLAN, HANDOFF (this), FINDINGS, SETUP, RECLINED (the plan for a self-playing idle mode, 2026-10-30, nothing built) |
 
 ## Known traps (from the sister projects; the full list is PLAN.md "Lessons applied")
 - Jump tables on a 64 KB boundary and byte-indexed tables are misread by `bd833a2`; a
@@ -109,9 +175,12 @@ pwsh -NoProfile -File tools/launch.ps1 -Windowed          # a window on the user
   it (Prey's runs 1, 3, 4). `find_code_pointers.py` before the first run.
 - `longjmp` through translated code without the manifest entries corrupts the host stack
   (libpng and libjpeg are in this image).
+- The audio worker's C000008F on an unseeded FP context: hit here in run 1, fixed by the five
+  guard hooks; if a new FP exception shows on another thread, hook that thread's entry too.
 - Renderer options only as `--name=value`.
 - A pad press in a runtime dialog needs `SetNavCursorVisible(true)` (in `ui_pad.cpp` already).
 - `readback_resolve` defaults to `none`; decide per feature, log the chosen value.
 - The rename from a sister repo must include `port/generated/rexglue.cmake` (tracked, BSD).
 - `license_mask` 0 is the trial: the app sets 1; a run that shows trial text means the command
   line overrode it or the game reads another bit.
+- A third START in the autopilot pauses the game; the pause menu's A is "Resume game".

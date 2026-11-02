@@ -91,15 +91,66 @@ implementation (a logged stub): `XamUserCreateStatsEnumerator`, `XamShowAchievem
 - Five languages: English, French, German, Spanish, Italian.
 - `D3D version is %i.%i %s, frame is %i.`: the D3D9 runtime's own banner.
 
-### Translation facts (ReXGlue `bd833a2`, 2026-10-30; codegen not yet run)
-- `.pdata` lists **1,764 functions** (0x82020000 to 0x820E2A34).
+### Translation facts (ReXGlue `bd833a2`, 2026-10-30)
+- `.pdata` lists **1,764 functions** (0x82020000 to 0x820E2A34). Round 1 (the scaffold
+  manifest) stopped on one error, `b 0x82075438 from 0x8207D764 - target not in any function`:
+  a leaf reached by a tail branch, added as the first hint; then `geomwars.exe` linked
+  (14 generated translation units, the compile about two minutes at 12 jobs).
+- Round 2: `tools/find_missed_functions.py` **34** candidates and `tools/find_code_pointers.py`
+  **26**, merged to 34 distinct, added wholesale; no "Unresolved" warning; both finders at 0
+  afterwards. `tools/find_vcall_thunks.py`: 0 unregistered forwarders.
+- `tools/check_switch_tables.py`: **34 switches, 0 wrong, 0 not replayed** (rounds 1 and 2).
+- `tools/check_vector_aliasing.py`: no read-after-write hazard in 9,120 vector instructions.
 - **setjmp** 0x82099830 and **longjmp** 0x82099600: the MS CRT pair, found by matching Prey's
   pair (0x822ECC00 / 0x822EC9B0) over 24 instructions with immediates and branch targets masked,
   one hit each.
 - **VdSwap**: the import thunk at 0x820E2504 is called from one place, the `bl` at 0x82032A1C:
   the frame hook `GeomWarsFrameMark` (manifest).
 - **mtfsf** instructions: four, at 0x8209C708, 0x8209C73C, 0x8209C75C, 0x8209C76C (the C
-  runtime's floating-point environment functions, together). The FPSCR guard's hook points if the
-  audio worker raises C000008F (Quake 4's and DOA4's trap).
+  runtime's floating-point environment functions, together). **Run 1 (2026-10-30) raised
+  C000008F on the audio worker at +2 s** (MXCSR 0x20: the game's mixer `sub_820B33E8` four
+  frames under the render-driver callback `sub_82081578`, the outermost guest function on that
+  thread): Quake 4's and DOA4's trap. The FPSCR guard is hooked at 0x82081578 and the four
+  `mtfsf` (manifest). **Run 2 (2026-10-30), with the hooks: no exception in 90 s**, the audio
+  worker's callback (`82092510`, the one XAudio render-driver client) ran throughout.
+
+### Run 2 facts (2026-10-30, `boot.txt`, 90 s, Windows, RTX 4090, 720p windowed)
+- **Boots to the game**: the Bizarre Creations logo (a dotted pumpkin) is up at +3 s; one START
+  lands on "Select game mode" (Evolved / Retro / Back) with the title's particle field; START
+  on Evolved spawns the ship (the blue spawn flash, the grid, the stars); enemies (pinwheels,
+  diamonds) arrive; the pause menu is Resume game / Help and options / Leaderboards /
+  Achievements / Return to main menu; game over reads "Final score: 0" with "Continue". The HUD
+  shows Score, lives and bombs (three hexagons each), **Highscore 10,000** (the table's seed).
+- **No sign-in prompt** was shown and no `XamShowSigninUI` call appears in the log: the runtime
+  answers the sign-in state without a dialog. **No trial text** anywhere (`license_mask 1`).
+- **60 Hz**: every 10 s window of the frame log averaged 60.0 fps (median 16.65 ms, 1% low
+  53-55 fps, 80-87% of presents on the 60 Hz vblank); one 238 ms stall in the window that held
+  the game over (`XSessionWriteStats` / `XSessionEnd` at +40 s, the stats write at the end of a
+  game, no pipeline creation then). 32 pipeline/shader creations in all, all in the first minute.
+- **Audio**: the SDL endpoint at 48 kHz stereo; `XAudioSubmitRenderDriverFrame` from the game's
+  mixer, queue depth 4-8 frames; not yet listened to (an audio dump is the check).
+- Log noise, all once: `gamecontrollerdb.txt` missing, "Achievement store: refusing achievement
+  with ID 0" (the store loaded 11 entries), one skipped Vulkan present on the first frame
+  ("async placeholder draw"). `XMPGetPlaybackController` polled every 30 ms throughout.
+- The game's "Highscore" seed and the achievements come from the profile/achievement store under
+  `port/user-smoke` (the smoke run's own user directory).
+### Run 3 facts (2026-10-30, `menu.txt`, 108 s until the user closed the window; log `smoke-20261030-094609.log`)
+- **It plays.** The autopilot's sticks move the ship (**+y is up**) and the right stick fires:
+  bullet streams, kills, the score counting (25 at +15 s, 75 at +30 s, 800 at +91 s), a bomb
+  from the right trigger at the minute (the bomb count fell to 2), lives lost to pinwheels.
+  The arena is larger than the screen: the camera scrolls and the cyan border shows; a stick
+  held 3 s parks the ship on the wall. The grid warps under fire and explosions, the bloom and
+  the sparks look right in every capture read. 60.0 fps in all twelve 10 s windows.
+- The user took the pad during the run (every controller drives player 1): the pause menu's
+  **Achievements** was opened at +47 s, which hit the `XamShowAchievementsUI` stub (one
+  warning) **and the game carried on**: the session ended at +50 s (back to the menu) and a new
+  game started at +52 s (`XSessionStart`). So that Live screen fails closed on its own.
+- The session calls per game: `XGISessionCreateImpl`, `XGISessionJoinLocal`, `XSessionStart`,
+  `XGIUserSetContextEx` (0x8001, 0x800A, 0x800B) at the start; `XSessionWriteStats`,
+  `XSessionEnd`, `XGISessionDelete` at game over. No `XamUserWriteProfileSettings` yet: no game
+  reached a new high score.
+- All 35 captures came out at 2560x1440 this run (run 2: only the first): the capture reads
+  the client area, so the window was at the display's size; whether the user maximised it or
+  the 720p request was lost is unverified.
 - `tools/check_switch_tables.py`, `check_vector_aliasing.py`, `find_missed_functions.py`,
   `find_code_pointers.py`: after the first codegen.

@@ -24,9 +24,49 @@ setjmp_address = 0x82099830
 longjmp_address = 0x82099600
 
 [entrypoint.functions]
-# Round 1 (2026-10-30): the scaffold. Nothing yet: the first codegen run (after the user's OK,
-# docs/HANDOFF.md) says whether this image needs any hint; then tools/find_missed_functions.py,
-# tools/find_code_pointers.py and tools/check_switch_tables.py on the decrypted image.
+# Round 1 (2026-10-30): the first codegen run's one error, "b 0x82075438 from 0x8207D764 -
+# target not in any function": a leaf reached by a tail branch with no .pdata entry (the sister
+# images each needed one to three of these).
+0x82075438 = {}  # codegen UnresolvedCall, tail branch from 0x8207D764
+
+# Round 2 (2026-10-30): tools/find_missed_functions.py (34) and tools/find_code_pointers.py (26)
+# on the decrypted image after round 1, merged (34 distinct): method-table slots and
+# addresses built in code at function boundaries, added wholesale as in the sister repos. A
+# candidate that splits a function shows up as an 'Unresolved' codegen warning and gets dropped.
+0X82020008 = {}  # built in code, after a bl (find_missed_functions.py)
+0X82020090 = {}  # built in code, after a bl (find_missed_functions.py)
+0X82020400 = {}  # built in code, after a bl (find_missed_functions.py)
+0X820247B8 = {}  # built in code, after a bl (find_missed_functions.py)
+0X82024FE4 = {}  # built in code, after a bl (find_missed_functions.py)
+0X8202C21C = {}  # from 0x82019B28 (find_missed_functions.py)
+0X8202D984 = {}  # from 0x82019B70 (find_missed_functions.py)
+0X8202DAFC = {}  # from 0x82019B80 (find_missed_functions.py)
+0X82048414 = {}  # from 0x820F597C (find_missed_functions.py)
+0X8205C720 = {}  # built in code (find_missed_functions.py)
+0X820765D0 = {}  # from 0x8200A498 (find_missed_functions.py)
+0X820765E0 = {}  # from 0x8200A480 (find_missed_functions.py)
+0X820765E8 = {}  # from 0x8200A484 (find_missed_functions.py)
+0X820765F0 = {}  # from 0x8200A488 (find_missed_functions.py)
+0X820765F8 = {}  # from 0x8200A48C (find_missed_functions.py)
+0X8207DA00 = {}  # from 0x8200A750 (find_missed_functions.py)
+0X8207DA08 = {}  # from 0x8200A754 (find_missed_functions.py)
+0X8207DA10 = {}  # from 0x8200A7D0 (find_missed_functions.py)
+0X8207DA18 = {}  # from 0x8200A7D4 (find_missed_functions.py)
+0X8207DA20 = {}  # from 0x8200A6F0 (find_missed_functions.py)
+0X8207DA40 = {}  # from 0x8200A70C (find_missed_functions.py)
+0X8207DA48 = {}  # from 0x8200A7F8 (find_missed_functions.py)
+0X8207DA58 = {}  # from 0x8200A800 (find_missed_functions.py)
+0X8207DA68 = {}  # from 0x8200A808 (find_missed_functions.py)
+0X82094BB8 = {}  # built in code, after a bl (find_missed_functions.py)
+0X8209D3CC = {}  # from 0x82019CE8 (find_missed_functions.py)
+0X820A1654 = {}  # from 0x82019D70 (find_missed_functions.py)
+0X820A20B8 = {}  # from 0x82019DA0 (find_missed_functions.py)
+0X820A2180 = {}  # from 0x82019DC0 (find_missed_functions.py)
+0X820A8D28 = {}  # from 0x820192E0 (find_missed_functions.py)
+0X820A8E30 = {}  # from 0x820192C8 (find_missed_functions.py)
+0X820A8FD0 = {}  # from 0x82019288 (find_missed_functions.py)
+0X820BDF98 = {}  # from 0x82017844 (find_missed_functions.py)
+0X820C6940 = {}  # built in code (find_missed_functions.py)
 
 # The game's own frame rate and the RenderDoc capture trigger (src/frame_timing.cpp): just before
 # its one call to VdSwap (the import thunk at 0x820E2504), the only `bl` to it in .text, at
@@ -34,4 +74,34 @@ longjmp_address = 0x82099600
 [[entrypoint.midasm_hook]]
 name = "GeomWarsFrameMark"
 address = 0x82032A1C
+registers = []
+
+# The FPSCR guard (src/fpscr_guard.cpp): run 1 (2026-10-30) died at +2 s with C000008F on the
+# audio worker (MXCSR 0x20, the game's mixer sub_820B33E8 under the render-driver callback
+# sub_82081578, the outermost guest function on that thread in the crash report). Hooked at the
+# callback's entry and before each of the image's four mtfsf (the C runtime's floating-point
+# environment functions, FINDINGS.md), as DOA4 and Quake 4 did.
+[[entrypoint.midasm_hook]]   # the audio render-driver callback, entered on an unseeded context
+name = "GeomWarsGuardFpscr"
+address = 0x82081578
+registers = []
+
+[[entrypoint.midasm_hook]]   # mtfsf, C runtime
+name = "GeomWarsGuardFpscr"
+address = 0x8209C708
+registers = []
+
+[[entrypoint.midasm_hook]]   # mtfsf, C runtime
+name = "GeomWarsGuardFpscr"
+address = 0x8209C73C
+registers = []
+
+[[entrypoint.midasm_hook]]   # mtfsf, C runtime
+name = "GeomWarsGuardFpscr"
+address = 0x8209C75C
+registers = []
+
+[[entrypoint.midasm_hook]]   # mtfsf, C runtime
+name = "GeomWarsGuardFpscr"
+address = 0x8209C76C
 registers = []

@@ -8,8 +8,9 @@
 // runs the game's mixer callback, is not seeded, so its cached value is 0 and the mixer's first
 // vector op writes MXCSR with every FP exception unmasked.
 //
-// Quake 4's and GRAW's first boots died that way (C000008F on the audio worker), and so did
-// GEOMWARS's (2026-10-29, MXCSR 0x8060 under the audio callback sub_82968368). GeomWarsGuardFpscr is
+// Quake 4's, GRAW's, DOA4's and Prey's first boots died that way (C000008F on the audio worker),
+// and so did this game's (2026-10-30, run 1 at +2 s, the mixer sub_820B33E8 under the render-driver
+// callback sub_82081578). GeomWarsGuardFpscr is
 // hooked at the callback's entry and before each mtfsf ([[entrypoint.midasm_hook]] in
 // geomwars_manifest.toml). It seeds the context the way InitHost does: the current MXCSR with every
 // exception masked.
