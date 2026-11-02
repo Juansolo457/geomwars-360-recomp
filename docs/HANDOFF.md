@@ -83,6 +83,19 @@ included, force pushes and deletion off. CodeRabbit: the GitHub App covers the a
 reviewed PR #1 (a summary, no threads). Pull requests are merged by the user, with a merge
 commit (CONTRIBUTING.md).
 
+### Steam Deck via Proton (2026-11-01; package in `private/steamdeck/GeometryWars-SteamDeck`)
+At the user's request, before the native Linux build (M4): the base game from `first-build` under
+Proton, at `/home/deck/recomps/GeometryWars-SteamDeck/` (SSH `deck@steamdeck`), in LOTR Conquest's
+layout: `geomwars.exe` (Release), `geomwars-relwithdebinfo.exe` with its PDB, the SDK DLLs, the VC
+runtime DLLs, `geomwars.toml` (fullscreen, 720p, `resolution_scale = 1`, 16x AF, log flush every
+second, `geomwars_frame_log = "logs/frames.csv"`), `game/`, `user/`, `logs/`, and the setup in
+`README-SteamDeck.txt`. Copied and checked file by file. **Not run on the Deck yet**: the user
+tests it, and the logs are pulled over SSH.
+
+### Branches
+`retro-reclined` (off `reclined-r0`) is the remixed Geometry Wars Retro Reclined, kept apart from
+the base game. Base-game work stays on `first-build`.
+
 ## Next steps (in order; each build or run needs the user's OK first)
 1. **M2, the rest:** (done) the Evolved capture pass, run 3. Next: Retro (the second entry on
    "Select game mode": a DOWN before the START), and a capture-by-capture comparison against
